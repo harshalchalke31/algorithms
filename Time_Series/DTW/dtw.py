@@ -11,51 +11,77 @@ class DTW:
         self.path = None
         self.dtw_distance = None
 
+
     def compute(self):
         signal1, signal2 = self.signal1, self.signal2
         N, M = len(signal1), len(signal2)
 
+        # 1. Create the distance matrix as before
         self.distance_matrix = np.zeros((N, M))
         for i in range(N):
             for j in range(M):
                 self.distance_matrix[i, j] = abs(signal1[i] - signal2[j])
 
+        # 2. Allocate the cost matrix (+1 in each dimension) and traceback matrix
         self.cost_matrix = np.full((N + 1, M + 1), np.inf)
-        self.cost_matrix[0, 0] = self.distance_matrix[0, 0]
+        traceback = np.zeros((N + 1, M + 1))
 
-        traceback = np.zeros((N, M))
-        for i in range(N):
-            for j in range(M):
-                choices = [
-                    self.cost_matrix[i, j],      # match (0)
-                    self.cost_matrix[i, j + 1],  # insertion (1)
-                    self.cost_matrix[i + 1, j]   # deletion (2)
+        # 3. **Change**: Set cost_matrix[0, 0] = 0 instead of distance_matrix[0,0]
+        self.cost_matrix[0, 0] = 0.0
+
+        # 4. **Change**: Initialize the first row and the first column properly
+        #    so the path can start from (0,0) and then extend.
+        for i in range(1, N + 1):
+            self.cost_matrix[i, 0] = self.cost_matrix[i - 1, 0] + self.distance_matrix[i - 1, 0]
+            traceback[i, 0] = 0  # means we came from (i-1, 0)
+
+        for j in range(1, M + 1):
+            self.cost_matrix[0, j] = self.cost_matrix[0, j - 1] + self.distance_matrix[0, j - 1]
+            traceback[0, j] = 1  # means we came from (0, j-1)
+
+        # 5. **Change**: Fill in the cost matrix using the standard min of neighbors
+        #    cost[i,j] = distance_matrix[i-1,j-1] + min(...).
+        for i in range(1, N + 1):
+            for j in range(1, M + 1):
+                dist = self.distance_matrix[i - 1, j - 1]
+                # Check the three possible previous steps
+                costs = [
+                    self.cost_matrix[i - 1, j],    # came from top
+                    self.cost_matrix[i, j - 1],    # came from left
+                    self.cost_matrix[i - 1, j - 1] # came from diagonal
                 ]
-                min_choice = np.argmin(choices)
-                self.cost_matrix[i + 1, j + 1] = self.distance_matrix[i, j] + choices[min_choice]
-                traceback[i, j] = min_choice
+                min_cost = min(costs)
+                self.cost_matrix[i, j] = dist + min_cost
 
+                # Record which direction gave the min cost
+                if min_cost == costs[0]:
+                    traceback[i, j] = 0  # from top
+                elif min_cost == costs[1]:
+                    traceback[i, j] = 1  # from left
+                else:
+                    traceback[i, j] = 2  # from diagonal
+
+        # 6. The final DTW distance is at cost_matrix[N, M]
         self.dtw_distance = self.cost_matrix[N, M]
 
-        i, j = N - 1, M - 1
-        self.path = [(i, j)]
+        # 7. **Change**: Traceback from (N, M) down to (0, 0)
+        i, j = N, M
+        self.path = []
         while i > 0 or j > 0:
-            if i == 0:
-                j -= 1
-            elif j == 0:
-                i -= 1
+            self.path.append((i - 1, j - 1))  # store the (signal1 index, signal2 index)
+
+            direction = traceback[i, j]
+            if direction == 0:
+                i -= 1  # came from top
+            elif direction == 1:
+                j -= 1  # came from left
             else:
-                tb_direction = traceback[i, j]
-                if tb_direction == 0:
-                    i -= 1
-                    j -= 1
-                elif tb_direction == 1:
-                    i -= 1
-                elif tb_direction == 2:
-                    j -= 1
-            self.path.append((i, j))
+                i -= 1
+                j -= 1
+
         self.path.reverse()
 
+        # 8. Normalize by path length if requested
         if self.normalized:
             return self.dtw_distance / len(self.path)
         else:
