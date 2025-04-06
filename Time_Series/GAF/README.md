@@ -5,28 +5,29 @@ This project implements the **Gramian Angular Field (GAF)** technique for encodi
 
 ---
 
-## Core Algorithm  
+## 🔍 Core Algorithm
+
 1. **Min-Max Normalization**  
    The input signal is normalized to the range \([-1, 1]\):  
-   \[
+   ```math
    X' = 2 \times \frac{X - \min(X)}{\max(X) - \min(X)} - 1
-   \]
+   ```
 
 2. **Polar Encoding**  
    Convert normalized values to angles using:  
-   \[
+   ```math
    \phi_i = \arccos(X'_i)
-   \]
+   ```
 
 3. **GAF Construction**  
-   - **GASF**:  
-     \[
-     G[i,j] = \cos(\phi_i + \phi_j)
-     \]
-   - **GADF**:  
-     \[
-     G[i,j] = \cos(\phi_i - \phi_j)
-     \]
+   - **GASF** (Gramian Angular Summation Field):  
+     ```math
+     G[i, j] = \cos(\phi_i + \phi_j)
+     ```
+   - **GADF** (Gramian Angular Difference Field):  
+     ```math
+     G[i, j] = \cos(\phi_i - \phi_j)
+     ```
 
 4. **Visualization**  
    Each GAF matrix is visualized using Matplotlib's `imshow()` for intuitive inspection.
