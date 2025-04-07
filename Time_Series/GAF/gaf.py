@@ -13,7 +13,7 @@ def GAF(signal:np.array,summation:bool=True):
     polar_signal = np.arccos(normalized_signal)
 
     if summation == False:
-        return np.cos(polar_signal[:,None] - polar_signal[None,:])
+        return np.sin(polar_signal[:,None] - polar_signal[None,:])
     else:
         return np.cos(polar_signal[:,None] + polar_signal[None,:])
 
