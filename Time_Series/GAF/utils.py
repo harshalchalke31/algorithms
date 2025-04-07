@@ -48,41 +48,41 @@ class ECGDataset(Dataset):
 
 
 
-def plot_loss_curves(log_path:Path,suptitle:str='Model Performance'):
-    df = pd.read_csv(log_path)  
+def plot_classifier_curves(log_path: Path, suptitle: str = 'Classifier Performance'):
+    df = pd.read_csv(log_path)
 
-    # extract columns
     epochs = df['Epoch']
     train_loss = df['Train Loss']
-    valid_loss = df['Valid Loss']
-    valid_dice = df['Valid Dice']
+    val_loss = df['Val Loss']
+    train_acc = df['Train Acc']
+    val_acc = df['Val Acc']
 
+    plt.figure(figsize=(12, 5))
 
-    plt.figure(figsize=(10, 4))
-
-    # --- Subplot 1: Loss curves ---
+    # --- Subplot 1: Loss ---
     plt.subplot(1, 2, 1)
     plt.plot(epochs, train_loss, label='Train Loss')
-    plt.plot(epochs, valid_loss, label='Valid Loss')
+    plt.plot(epochs, val_loss, label='Val Loss')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.title('Training & Validation Loss')
     plt.legend()
     plt.grid(True)
 
-    # --- Subplot 2: Validation Dice ---
+    # --- Subplot 2: Accuracy ---
     plt.subplot(1, 2, 2)
-    plt.plot(epochs, valid_dice, label='Valid Dice', color='green')
+    plt.plot(epochs, train_acc, label='Train Acc')
+    plt.plot(epochs, val_acc, label='Val Acc')
     plt.xlabel('Epoch')
-    plt.ylabel('Dice')
-    plt.title('Validation Dice')
+    plt.ylabel('Accuracy')
+    plt.title('Training & Validation Accuracy')
     plt.legend()
     plt.grid(True)
-    
-    plt.suptitle(suptitle, fontsize=16)
 
+    plt.suptitle(suptitle, fontsize=16)
     plt.tight_layout(rect=[0, 0, 1, 0.95])
     plt.show()
+
 
 def plot_gaf_samples(dataset, num_samples=6, cols=3, gaf_type="GASF"):
     rows = (num_samples + cols - 1) // cols
@@ -119,5 +119,40 @@ def plot_gaf_both(dataset, num_samples=6, cols=3, gaf_type="GASF + GADF"):
         plt.title(f"GADF - Label: {label.item()}")
         plt.axis('off')
 
+    plt.tight_layout()
+    plt.show()
+
+
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+import seaborn as sns
+import matplotlib.pyplot as plt
+import torch
+
+def evaluate_classifier(model, dataloader, device, class_names=None, title="Confusion Matrix"):
+    model.eval().to(device)
+    y_true, y_pred = [], []
+
+    with torch.no_grad():
+        for inputs, labels in dataloader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            outputs = model(inputs)
+            preds = outputs.argmax(dim=1)
+
+            y_true.extend(labels.cpu().numpy())
+            y_pred.extend(preds.cpu().numpy())
+
+    # Print metrics
+    acc = accuracy_score(y_true, y_pred)
+    print(f"Accuracy: {acc:.4f}")
+    print("Classification Report:\n", classification_report(y_true, y_pred, target_names=class_names))
+
+    # Plot confusion matrix
+    cm = confusion_matrix(y_true, y_pred)
+    plt.figure(figsize=(6, 5))
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
+                xticklabels=class_names, yticklabels=class_names)
+    plt.xlabel("Predicted")
+    plt.ylabel("True")
+    plt.title(title)
     plt.tight_layout()
     plt.show()
