@@ -1,3 +1,4 @@
+# Find Minimum in Rotated Sorted Array
 from typing import List
 
 class Solution:
@@ -9,21 +10,17 @@ class Solution:
             mid = (left+right)//2
             if nums[mid]<=ans: ans=nums[mid]
             print(f'Array:{nums} mid:{mid}')
-            
+
             # left sorted
             if nums[mid]>=nums[left]:
-                # check if sorted half can be eliminated
-                if nums[mid]<ans or nums[left]>ans:
-                    left=mid+1
-                else:
-                    right = mid-1
+                # eliminated sorted half
+                if ans>nums[left]: ans = nums[left]
+                left = mid+1 
+
             # right sorted
             else:
                 # check if sorted half can be eliminated
-                if nums[mid]>ans or nums[right]<ans:
-                    right = mid-1
-                else:
-                    left=mid+1
+                right = mid-1
         return ans
     
 
